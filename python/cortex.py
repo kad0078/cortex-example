@@ -4,7 +4,7 @@ import json
 import ssl
 import time
 import sys
-from pydispatch import Dispatcher
+from pydispatch import dispatcher
 import warnings
 import threading
 
