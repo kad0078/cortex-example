@@ -4,7 +4,7 @@ import json
 import ssl
 import time
 import sys
-from pydispatch import Dispatcher
+from pydispatch.dispatcher import connect, send, Any, Anonymous
 import warnings
 import threading
 
@@ -60,15 +60,44 @@ HEADSET_CANNOT_WORK_WITH_BTLE = 112
 HEADSET_CANNOT_CONNECT_DISABLE_MOTION = 113
 HEADSET_SCANNING_FINISHED = 142
 
-class Cortex(Dispatcher):
+class Cortex(object):
+    _events_ = ['inform_error','create_session_done', 'query_profile_done', 
+                'load_unload_profile_done', 'save_profile_done', 
+                'get_mc_active_action_done','mc_brainmap_done', 
+                'mc_action_sensitivity_done', 'mc_training_threshold_done', 
+                'create_record_done', 'stop_record_done',
+                'warn_cortex_stop_all_sub', 'warn_record_post_processing_done',
+                'inject_marker_done', 'update_marker_done', 'export_record_done', 
+                'new_data_labels', 'new_com_data', 'new_fe_data', 'new_eeg_data', 
+                'new_mot_data', 'new_dev_data', 'new_met_data', 'new_pow_data', 
+                'new_sys_data']
+    
+    def __init__ 
+    def emit(self, event, *args, **kwargs):
+        """Trigger an event"""
+        if event not in self._events_:
+            raise ValueError(f"Unknown event: {event}")
+        send(event, sender=self, *args, **kwargs)
 
-    _events_ = ['inform_error','create_session_done', 'query_profile_done', 'load_unload_profile_done', 
-                'save_profile_done', 'get_mc_active_action_done','mc_brainmap_done', 'mc_action_sensitivity_done', 
-                'mc_training_threshold_done', 'create_record_done', 'stop_record_done','warn_cortex_stop_all_sub', 'warn_record_post_processing_done',
-                'inject_marker_done', 'update_marker_done', 'export_record_done', 'new_data_labels', 
-                'new_com_data', 'new_fe_data', 'new_eeg_data', 'new_mot_data', 'new_dev_data', 
-                'new_met_data', 'new_pow_data', 'new_sys_data']
-    def __init__(self, client_id, client_secret, debug_mode=False, **kwargs):
+    def bind(self, event, callback):
+        """Register an event callback"""
+        if event not in self._events_:
+            raise ValueError(f"Unknown event: {event}")
+        self._connected_signals[event] = connect(
+            callback, 
+            signal=event, 
+            sender=self,
+            weak=False
+        )
+
+    def unbind(self, event):
+        """Remove event callback"""
+        if event in self._connected_signals:
+            disconnect(self._connected_signals[event])
+            del self._connected_signals[event](self, client_id, client_secret, debug_mode=False, **kwargs):
+        self._connected_signals = {}
+        # Keep all your existing initialization code here
+        # ...
         
         self.session_id = ''
         self.headset_id = ''
@@ -901,6 +930,7 @@ class Cortex(Dispatcher):
             "params": {
                 "cortexToken": self.auth,
                 "session": self.session_id
+     
             }
         }
         if self.debug:
